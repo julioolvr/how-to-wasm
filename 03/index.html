@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>How to WASM - Step 03</title>
+</head>
+
+<body>
+  <script>
+    function* collectCString(buffer) {
+      let ptr = 0;
+
+      while (buffer[ptr] !== 0) {
+        if (buffer[ptr] === undefined) {
+          throw new Error("Tried to read undef mem");
+        }
+
+        yield buffer[ptr];
+        ptr += 1;
+      }
+    }
+
+    function storeStringInBuffer(str, linearMemory, alloc) {
+      const utf8Encoder = new TextEncoder("UTF-8");
+      let stringBuffer = utf8Encoder.encode(str);
+      let len = stringBuffer.length;
+      let ptr = alloc(len+1);
+
+      let memory = new Uint8Array(linearMemory.buffer, ptr);
+      for (i = 0; i < len; i++) {
+        memory[i] = stringBuffer[i];
+      }
+
+      memory[len] = 0;
+
+      return ptr;
+    }
+
+    function readStringFromBuffer(ptr, linearMemory) {
+      const u8Buffer = new Uint8Array(linearMemory.buffer, ptr);
+      const buffer = Uint8Array.from(collectCString(u8Buffer));
+
+      const utf8Decoder = new TextDecoder('UTF-8');
+      return utf8Decoder.decode(buffer);
+    }
+
+    fetch('./lowercase.small.wasm')
+      .then(response => response.arrayBuffer())
+      .then(bytes => WebAssembly.instantiate(bytes, {}))
+      .then(results => {
+        const {
+          lowercase,
+          alloc,
+          memory
+        } = results.instance.exports;
+
+        const input = storeStringInBuffer('SOMETHING', memory, alloc);
+        const result = readStringFromBuffer(lowercase(input), memory);
+
+        console.log('Result from Rust:', result, result === 'something');
+      });
+  </script>
+</body>
+
+</html>
