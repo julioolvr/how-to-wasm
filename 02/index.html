@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>How to WASM - Step 02</title>
+</head>
+
+<body>
+  <script>
+    function* collectCString(buffer) {
+      let ptr = 0;
+
+      while (buffer[ptr] !== 0) {
+        if (buffer[ptr] === undefined) {
+          throw new Error("Tried to read undef mem");
+        }
+
+        yield buffer[ptr];
+        ptr += 1;
+      }
+    }
+
+    fetch('./give_me_a_string.small.wasm')
+      .then(response => response.arrayBuffer())
+      .then(bytes => WebAssembly.instantiate(bytes, {}))
+      .then(results => {
+        const {
+          give_me_a_string: giveMeAString,
+          memory
+        } = results.instance.exports;
+
+        const ptr = giveMeAString();
+        const u8Buffer = new Uint8Array(memory.buffer, ptr);
+        const buffer = Uint8Array.from(collectCString(u8Buffer));
+
+        const utf8Decoder = new TextDecoder('UTF-8');
+        const string = utf8Decoder.decode(buffer);
+
+        console.log('String from Rust:', string);
+      })
+  </script>
+</body>
+
+</html>
