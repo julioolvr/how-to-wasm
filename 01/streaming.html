@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>How to WASM - Step 01</title>
+</head>
+
+<body>
+  <script>
+    WebAssembly.instantiateStreaming(fetch('./sum.wasm'))
+      .then(results => console.log(results.instance.exports.sum(1, 2)))
+  </script>
+</body>
+
+</html>
