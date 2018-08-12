@@ -8,7 +8,7 @@
 
 <body>
   <script>
-    fetch('./sum-small.wasm')
+    fetch('./sum.wasm')
       .then(response => response.arrayBuffer())
       .then(bytes => WebAssembly.instantiate(bytes, {}))
       .then(results => {
